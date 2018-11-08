@@ -491,3 +491,24 @@ def reset():
     _PLACEHOLDER_CACHE = {}
     VARIABLES = {}
     tf.reset_default_graph()
+
+def create_dataset(input_features, output_labels, batch_size, shuffle=True, num_epochs=None):
+    """ Create TF dataset from numpy arrays
+    """
+    dataset = tf.data.Dataset.from_tensor_slices((input_features, output_labels))
+    if shuffle:
+        dataset = dataset.shuffle(buffer_size = 1000)
+        dataset = dataset.batch(batch_size)
+        dataset = dataset.repeat(num_epochs)
+
+    return dataset
+
+def loss(model, x, y):
+  y_ = model(x)
+  return tf.losses.mean_squared_error(labels=y, predictions=y_)
+
+def grad(model, inputs, targets):
+  with tf.GradientTape() as tape:
+    loss_value = loss(model, inputs, targets)
+  return loss_value, tape.gradient(loss_value, model.trainable_variables)
+
