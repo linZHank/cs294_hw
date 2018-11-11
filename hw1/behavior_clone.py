@@ -13,12 +13,18 @@ import pickle
 import tensorflow as tf
 import numpy as np
 import tf_util
+import gym
 
 tf.enable_eager_execution()
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("expert_data_file", type=str)
+  parser.add_argument('envname', type=str)
+  parser.add_argument('--render', action='store_true')
+  parser.add_argument("--max_timesteps", type=int)
+  parser.add_argument('--num_rollouts', type=int, default=20,
+                      help='Number of expert roll outs')
   args = parser.parse_args()
   
   with open(args.expert_data_file, "rb") as f:
@@ -29,11 +35,11 @@ if __name__ == "__main__":
 
   # train behavioral cloning policy based on expert data
   # training parameter
-  num_epochs = 1000
-  batch_size = 10000
+  num_epochs = 20
+  batch_size = 8192
   learning_rate = 0.01
   # model, dataset, optimizer, loss, etc..
-  model = tf.keras.Sequential([
+  bc_model = tf.keras.Sequential([
     tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(observations.shape[1],)), 
     tf.keras.layers.Dense(actions.shape[-1])
   ])
@@ -46,7 +52,7 @@ if __name__ == "__main__":
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
   global_step = tf.train.get_or_create_global_step()
   loss_value, grads = tf_util.grad(
-    model,
+    bc_model,
     observations,
     actions
   )
@@ -54,11 +60,44 @@ if __name__ == "__main__":
   # train nn
   for i, (x, y) in enumerate(dataset):
     # optimize model
-    loss_value, grads = tf_util.grad(model, x, y)
+    loss_value, grads = tf_util.grad(bc_model, x, y)
     optimizer.apply_gradients(
-      zip(grads, model.variables),
+      zip(grads, bc_model.variables),
       global_step
     )
     # log training
     if not i % 100:
       print("Iteration: {}, Loss: {:.3f}".format(i, loss_value))
+  print("Iteration: {}, Loss: {:.3f}".format(i, loss_value)) # print last iter loss
+
+  # apply trained policy
+  env = gym.make(args.envname)
+  max_steps = args.max_timesteps or env.spec.timestep_limit
+  episodic_returns = []
+  observations = []
+  actions = []
+  for episode in range(args.num_rollouts):
+    # print("Episode: {}".format(episode))
+    obs = env.reset()
+    done = False
+    total_reward = 0.
+    step = 0
+    while not done:
+      action = bc_model(obs.reshape(1,obs.shape[0]))
+      obs, reward, done, _ = env.step(action)
+      total_reward += reward
+      step += 1
+      if args.render:
+        env.render()
+      # if not step % 100:
+      print("Episode: {}, Step:{} of {}, reward: {}".format(episode, step, max_steps, reward))
+      if step >= max_steps:
+        break
+      
+    episodic_returns.append(total_reward)
+
+  print(
+    "\nEpisodic returns: {}".format(episodic_returns),
+    "\nAverage of the returns: {}".format(np.mean(episodic_returns)),
+    "\nStandard deviation of the returns: {}".format(np.std(episodic_returns))
+  )
