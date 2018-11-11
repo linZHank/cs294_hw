@@ -3,6 +3,9 @@
 """
 Code to train behavioral cloning agents based on expert data.
 Example usage:
+python behavior_clone.py expert_data/Reacher-v2.pkl Reacher-v2 --render \
+            --num_rollouts 10
+Make sure: run run_expert.py first to collect expert's policy
 
 Author of this script and included expert policies: linZHank (linzhank@gmail.com)
 """
