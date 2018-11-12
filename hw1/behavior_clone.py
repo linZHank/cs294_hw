@@ -5,7 +5,7 @@ Code to train behavioral cloning agents based on expert data.
 Example usage:
 python behavior_clone.py expert_data/Reacher-v2.pkl Reacher-v2 --render \
             --num_rollouts 10
-Make sure: run run_expert.py first to collect expert's policy
+Make sure: python run_expert.py first to collect expert's policy
 
 Author of this script and included expert policies: linZHank (linzhank@gmail.com)
 """
@@ -29,7 +29,8 @@ if __name__ == "__main__":
   parser.add_argument('--num_rollouts', type=int, default=20,
                       help='Number of expert roll outs')
   args = parser.parse_args()
-  
+
+  # load expert policy
   with open(args.expert_data_file, "rb") as f:
     expert_data = pickle.load(f)
   observations = expert_data["observations"].astype(np.float32)
