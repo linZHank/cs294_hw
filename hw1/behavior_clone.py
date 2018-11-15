@@ -20,6 +20,7 @@ import gym
 
 tf.enable_eager_execution()
 
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("expert_data_file", type=str)
@@ -33,21 +34,27 @@ if __name__ == "__main__":
   with open(args.expert_data_file, "rb") as f:
     expert_data = pickle.load(f)
   observations = expert_data["observations"].astype(np.float32)
+  epsilon = 1e-12
+  values_range = observations.ptp(axis=0)
+  values_range = np.array([max(epsilon, vr) for vr in values_range]).astype(np.float32)
+  values_min = observations.min(axis=0)
+  normalized_observations = (observations-values_min)/values_range
   actions = expert_data["actions"]
   actions = actions.reshape(actions.shape[0], actions.shape[-1]).astype(np.float32)
 
   # train behavioral cloning policy based on expert data
   # training parameter
-  num_epochs = 20
-  batch_size = 8192
-  learning_rate = 0.01
+  num_epochs = 200
+  batch_size = 20000
+  learning_rate = 1e-4
   # model, dataset, optimizer, loss, etc..
   bc_model = tf.keras.Sequential([
-    tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(observations.shape[1],)), 
+    tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(observations.shape[1],)),
+    tf.keras.layers.Dense(32, activation=tf.nn.relu),
     tf.keras.layers.Dense(actions.shape[-1])
   ])
   dataset = tf_util.create_dataset(
-    input_features=observations,
+    input_features=normalized_observations,
     output_labels=actions,
     batch_size=batch_size,
     num_epochs=num_epochs
@@ -82,12 +89,14 @@ if __name__ == "__main__":
   for episode in range(args.num_rollouts):
     # print("Episode: {}".format(episode))
     obs = env.reset()
+    obs_norm = (obs-values_min) / values_range
     done = False
     total_reward = 0.
     step = 0
     while not done:
       action = bc_model(obs.reshape(1,obs.shape[0]))
       obs, reward, done, _ = env.step(action)
+      obs_norm = (obs-values_min) / values_range
       total_reward += reward
       step += 1
       if args.render:
