@@ -498,8 +498,8 @@ def create_dataset(input_features, output_labels, batch_size, shuffle=True, num_
     dataset = tf.data.Dataset.from_tensor_slices((input_features, output_labels))
     if shuffle:
         dataset = dataset.shuffle(buffer_size = 1000)
-        dataset = dataset.batch(batch_size)
-        dataset = dataset.repeat(num_epochs)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.repeat(num_epochs)
 
     return dataset
 
@@ -511,4 +511,3 @@ def grad(model, inputs, targets):
   with tf.GradientTape() as tape:
     loss_value = loss(model, inputs, targets)
   return loss_value, tape.gradient(loss_value, model.trainable_variables)
-

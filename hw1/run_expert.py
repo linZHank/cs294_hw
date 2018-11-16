@@ -4,7 +4,7 @@
 Code to load an expert policy and generate roll-out data for behavioral cloning.
 Example usage:
     python3 run_expert.py experts/Humanoid-v1.pkl Humanoid-v1 --render \
-            --num_rollouts 20
+            --num_rollouts 20 --save_data True
 
 Author of this script and included expert policies: Jonathan Ho (hoj@openai.com)
 """
@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20,
                         help='Number of expert roll outs')
+    parser.add_argument("--save_data", type=bool, default=False)
     args = parser.parse_args()
 
     print('loading and building expert policy')
@@ -70,15 +71,16 @@ def main():
                        'actions': np.array(actions)}
 
         # save expert_data
-        filename = os.path.join('expert_data', args.envname + '.pkl')
-        if not os.path.exists(os.path.dirname(filename)):
-            try:
-                os.makedirs(os.path.dirname(filename))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
-        with open(filename, 'wb') as f:
-            pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
+        if args.save_data:
+            filename = os.path.join('expert_data', args.envname + '.pkl')
+            if not os.path.exists(os.path.dirname(filename)):
+                try:
+                    os.makedirs(os.path.dirname(filename))
+                except OSError as exc: # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
+            with open(filename, 'wb') as f:
+                pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
     main()
