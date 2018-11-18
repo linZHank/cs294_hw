@@ -44,8 +44,8 @@ if __name__ == "__main__":
   normalized_expert_obss = (expert_obss-expert_obss_min)/expert_obss_range
   # dataset parameters
   batch_size = 40000
-  num_epochs = 200
-  learning_rate = 1e-2
+  num_epochs = 300
+  learning_rate = 1e-3
   # make dataset use expert data
   expert_dataset = tf_util.create_dataset(
     input_features=normalized_expert_obss,
@@ -70,6 +70,7 @@ if __name__ == "__main__":
   train_op = optimizer.minimize(loss)
   # train cloned policy
   init = tf.global_variables_initializer()
+  saver = tf.train.Saver()
   with tf.Session() as sess:
     sess.run(init)
     i = 0
@@ -83,7 +84,9 @@ if __name__ == "__main__":
       except tf.errors.OutOfRangeError:
         break
       i += 1
-  
+    # save trained model
+    save_path = saver.save(sess, "/home/linzhank/playground/cs294/cs294_hw/hw1/checkpoint/model.ckpt")
+    print("Model saved in path : {}".format(save_path))
   # Apply trained policy
     env = gym.make(args.envname)
     # env parameters
