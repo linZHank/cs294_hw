@@ -44,7 +44,7 @@ if __name__ == "__main__":
   normalized_expert_obss = (expert_obss-expert_obss_min)/expert_obss_range
   # dataset parameters
   batch_size = 40000
-  num_epochs = 300
+  num_epochs = 400
   learning_rate = 1e-3
   # make dataset use expert data
   expert_dataset = tf_util.create_dataset(
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         break
       i += 1
     # save trained model
-    save_path = saver.save(sess, "/home/linzhank/playground/cs294/cs294_hw/hw1/checkpoint/model.ckpt")
+    save_path = saver.save(sess, "./bc_model/model.ckpt")
     print("Model saved in path : {}".format(save_path))
   # Apply trained policy
     env = gym.make(args.envname)
